@@ -1,40 +1,85 @@
-﻿using FileSystemManager.Models.Composite;
+﻿using FileSystemManager.Models.Adapter;
 
-namespace FileSystemManager
+namespace FileSystemManager.Models.Facade
 {
-    class Program
+    public class SyncFacade
     {
-        static void Main(string[] args)
+        private IFileSystem _sourceFS;
+        private IFileSystem _targetFS;
+
+        public SyncFacade(IFileSystem source, IFileSystem target)
         {
-            Console.WriteLine("=== Лабораторная работа №5. Паттерн Компоновщик ===\n");
+            _sourceFS = source;
+            _targetFS = target;
+        }
 
-            var root = new FolderItem("Root", "");
+        public void SyncFolder(string sourcePath, string targetPath)
+        {
+            Console.WriteLine($"\nСинхронизация: {sourcePath} -> {targetPath} ");
 
-            var documents = new FolderItem("Documents", "Root");
-            var images = new FolderItem("Images", "Root");
-            var projects = new FolderItem("Projects", "Root/Documents");
+            var items = _sourceFS.ListItems(sourcePath);
 
-            documents.Add(new FileItem("report.docx", 25000, "Root/Documents"));
-            documents.Add(new FileItem("notes.txt", 1500, "Root/Documents"));
-            documents.Add(projects);
+            foreach (var item in items)
+            {
+                string sourceFilePath = $"{sourcePath}/{item}";
+                string targetFilePath = $"{targetPath}/{item}";
 
-            projects.Add(new FileItem("project1.cs", 5000, "Root/Documents/Projects"));
-            projects.Add(new FileItem("project2.cs", 7500, "Root/Documents/Projects"));
+                Console.WriteLine($"Синхронизация файла: {item}");
 
-            images.Add(new FileItem("photo1.jpg", 2500000, "Root/Images"));
-            images.Add(new FileItem("photo2.jpg", 3200000, "Root/Images"));
+                try
+                {
+                    var data = _sourceFS.ReadFile(sourceFilePath);
+                    _targetFS.WriteFile(targetFilePath, data);
+                    Console.WriteLine($"  Успешно");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"  Ошибка: {ex.Message}");
+                }
+            }
 
-            root.Add(documents);
-            root.Add(images);
+            Console.WriteLine("Синхронизация завершена.\n");
+        }
 
-            Console.WriteLine("Структура файловой системы:\n");
-            root.Display();
+        public void Backup(string sourcePath, string backupPath)
+        {
+            Console.WriteLine($"\nРезервное копирование: {sourcePath} -> {backupPath} ===");
 
-            Console.WriteLine($"\nОбщий размер корневой папки: {root.GetSize()} байт");
-            Console.WriteLine($"Количество элементов в корне: {root.GetChildCount()}");
+            var items = _sourceFS.ListItems(sourcePath);
+            int successCount = 0;
+            int failCount = 0;
 
-            Console.WriteLine("\nНажмите любую клавишу для выхода...");
-            Console.ReadKey();
+            foreach (var item in items)
+            {
+                string sourceFilePath = $"{sourcePath}/{item}";
+                string backupFilePath = $"{backupPath}/{item}";
+
+                Console.WriteLine($"Копирование: {item}");
+
+                try
+                {
+                    var data = _sourceFS.ReadFile(sourceFilePath);
+                    _targetFS.WriteFile(backupFilePath, data);
+                    successCount++;
+                    Console.WriteLine($"  Успешно");
+                }
+                catch (Exception ex)
+                {
+                    failCount++;
+                    Console.WriteLine($"  Ошибка: {ex.Message}");
+                }
+            }
+
+            Console.WriteLine($"\nРезультат: {successCount} успешно, {failCount} ошибок");
+            Console.WriteLine("Резервное копирование завершено.\n");
+        }
+
+        public void FullSync()
+        {
+            Console.WriteLine("\nПолная синхронизация всех систем");
+            SyncFolder("Root/Documents", "Backup/Documents");
+            SyncFolder("Root/Images", "Backup/Images");
+            Console.WriteLine("Полная синхронизация завершена.\n");
         }
     }
 }

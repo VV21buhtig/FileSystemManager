@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace FileSystemManager.Models.Adapter
+﻿namespace FileSystemManager.Models.Adapter
 {
-    internal interface IFileSystem
+    public interface IFileSystem
     {
+        List<string> ListItems(string path);
+        byte[] ReadFile(string path);
+        void WriteFile(string path, byte[] data);
+        void DeleteItem(string path);
+        long GetSize(string path);
     }
 }
